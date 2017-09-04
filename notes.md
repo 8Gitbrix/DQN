@@ -14,7 +14,7 @@ nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4, padding=0)
 * padding
 
 ## Preprocessing Image
-* Crop the health bar:
+* Crop the health bar in MsPacman-v0 for example:
   To test image manipulations in terminal:
   ```python
   import gym
