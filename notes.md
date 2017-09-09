@@ -2,7 +2,7 @@
 ## Convolutional Network:
 * In Pytorch, convolutional layer is defined as:
 ```python
-nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4, padding=0)
+nn.Conv2d(in_channels, out_channels kernel_size, stride, padding)
 ```
 * `in_channels` is the number of incoming image feature maps.
 * `out_channels` are number of kernels you will use, which in turn determine the number of feature maps. Each kernel produces a separate feature map image after scanning the input. So 32 out_channels means you will have 32 feature map images. The more kernels you have, the more features you will detect.
@@ -22,8 +22,8 @@ nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4, padding=0)
   obs = env.reset()
   plt.show(plt.imshow(obs[0:174])) # outputs image with stats cropped 
   ```
-* Next Steps: convert to PIL Image, convert to greyscale, resize image to (84,84)
-* When scaling the image, cubic interpolation is used.
+* Next Steps: convert to PIL Image, convert to greyscale
+
 
 ## References:
 * *Playing Atari with Deep Reinforcement Learning* - https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf

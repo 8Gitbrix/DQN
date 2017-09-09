@@ -1,8 +1,10 @@
 import numpy as np
 import gym
 from gym import wrappers
-env_name = "Freeway-v0"
+from atari_wrappers import wrap_deepmind
+env_name = "FreewayNoFrameskip-v4"
 env = gym.make(env_name) # ms pac man
+env = wrap_deepmind(env)
 env = wrappers.Monitor(env, env_name + '_results', force=True)
 import torch
 import torch.nn as nn
@@ -15,50 +17,45 @@ from memory import RandomMemory
 
 # convert to PIL Image
 # convert to greyscale
-# resize image to (84,84)
 transform =  T.Compose([
             T.ToPILImage(),
             T.Lambda(lambda x: x.convert('L')),
-            T.Scale((84, 84), interpolation=T.Image.CUBIC),
             T.ToTensor()
         ])
 
 def process(img):
-    if env_name == "Freeway-v0":
-        img = img[15:195, 7:]
     return torch.Tensor(transform(img)).unsqueeze(0)
 
 class Qnet(nn.Module):
     def __init__(self, num_actions):
         super(Qnet, self).__init__()
+        self.bn1 = torch.nn.BatchNorm2d(1)
         # (84 - 8) / 4  + 1 = 20 (len,width) output size
         self.cnn1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4, padding=0)
-        self.relu1 = nn.ReLU()
+        self.bn2 = torch.nn.BatchNorm2d(32)
         # (20 - 4) / 2 + 1 = 9 (len,width) output size
         self.cnn2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=0)
-        self.relu2 = nn.ReLU()
+        self.bn3 = torch.nn.BatchNorm2d(64)
         # (9 - 3) / 1 + 1 = 7 (len,width )output size
         self.cnn3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=0)
-        self.relu3 = nn.ReLU()
+        self.bn4 = torch.nn.BatchNorm2d(64)
         # fully connected layer
         self.fc1 = nn.Linear(64 * 7 * 7, 512)
+        self.bn5 = torch.nn.BatchNorm1d(512)
         self.fc2 = nn.Linear(512, num_actions)
 
     def forward(self, x):
-        out = self.cnn1(x)
-        out = self.relu1(out)
-        out = self.cnn2(out)
-        out = self.relu2(out)
-        out = self.cnn3(out)
-        out = self.relu3(out)
+        out = F.relu(self.cnn1(self.bn1(x)))
+        out = F.relu(self.cnn2(self.bn2(out)))
+        out = F.relu(self.cnn3(self.bn3(out)))
         # Resize from (batch_size, 64, 7, 7) to (batch_size,64*7*7)
         out = out.view(out.size(0), -1)
-        out = self.fc1(out)
+        out = F.relu(self.fc1(out))
         return self.fc2(out)
 
 min_epsilon = 0.1
 init_epsilon = 1
-eps_decay_steps = 50000
+eps_decay_steps = 1000000
 epsilon = init_epsilon
 Q = Qnet(env.action_space.n)
 Q_target = Qnet(env.action_space.n)
@@ -69,7 +66,7 @@ def e_greedy(state, time):
         return np.random.choice(range(env.action_space.n), 1)[0]
     else:
         # since pytorch networks expect batch input, add extra input of zeros
-        state = torch.cat((Variable(state),torch.zeros(state.size())),0)
+        state = torch.cat((Variable(state,volatile=True),torch.zeros(state.size())),0)
         qvalues = Q(state)
         maxq, actions = torch.max(qvalues, 1)
         return actions[0].data[0]
@@ -77,12 +74,12 @@ def e_greedy(state, time):
 Q = Qnet(env.action_space.n)
 Qtarget = Qnet(env.action_space.n)
 batch_size = 32
-memory = RandomMemory(50000, batch_size)
+memory = RandomMemory(1000000, batch_size)
 discount = 0.99
 target_update_frequency = 10000
 learning_rate = 0.00025
-#optimizer = torch.optim.Adamax(Q.parameters(), lr=learning_rate)
-optimizer = torch.optim.RMSprop(Q.parameters(), lr=learning_rate, eps=0.001, alpha=0.95)
+optimizer = torch.optim.Adamax(Q.parameters(), lr=learning_rate)
+#optimizer = torch.optim.RMSprop(Q.parameters(), lr=learning_rate, eps=0.001, alpha=0.95)
 train_frequency = 4
 time = 0
 
