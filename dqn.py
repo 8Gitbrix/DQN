@@ -3,7 +3,7 @@ import gym
 from gym import wrappers
 from atari_wrappers import wrap_deepmind
 env_name = "FreewayNoFrameskip-v4"
-env = gym.make(env_name) # ms pac man
+env = gym.make(env_name)
 env = wrap_deepmind(env)
 env = wrappers.Monitor(env, env_name + '_results', force=True)
 import torch
@@ -15,11 +15,7 @@ from memory import RandomMemory
 
 # Raw atari image size: (210, 160, 3)
 
-# convert to PIL Image
-# convert to greyscale
 transform =  T.Compose([
-            T.ToPILImage(),
-            T.Lambda(lambda x: x.convert('L')),
             T.ToTensor()
         ])
 
@@ -29,9 +25,9 @@ def process(img):
 class Qnet(nn.Module):
     def __init__(self, num_actions):
         super(Qnet, self).__init__()
-        self.bn1 = torch.nn.BatchNorm2d(1)
+        self.bn1 = torch.nn.BatchNorm2d(4)
         # (84 - 8) / 4  + 1 = 20 (len,width) output size
-        self.cnn1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4, padding=0)
+        self.cnn1 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=8, stride=4, padding=0)
         self.bn2 = torch.nn.BatchNorm2d(32)
         # (20 - 4) / 2 + 1 = 9 (len,width) output size
         self.cnn2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2, padding=0)
@@ -78,8 +74,8 @@ memory = RandomMemory(1000000, batch_size)
 discount = 0.99
 target_update_frequency = 10000
 learning_rate = 0.00025
-optimizer = torch.optim.Adamax(Q.parameters(), lr=learning_rate)
-#optimizer = torch.optim.RMSprop(Q.parameters(), lr=learning_rate, eps=0.001, alpha=0.95)
+#optimizer = torch.optim.Adamax(Q.parameters(), lr=learning_rate)
+optimizer = torch.optim.RMSprop(Q.parameters(), lr=learning_rate, eps=0.001, alpha=0.95)
 train_frequency = 4
 time = 0
 
