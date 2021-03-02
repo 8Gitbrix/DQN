@@ -1,0 +1,36 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      matrix:
+        # '3.12':
+        #     tag: 'alpine:3.12.0'
+        '3.9':
+          tag: 'alpine:3.9.2'
+        # 'python-3.7':
+        #   tag: 'python:3.7.6-alpine3.11'
+        # node-14:
+        #   tag: 'node:14.11-alpine3.11'
+        # 'dotnet-2.0':
+        #   tag: 'mcr.microsoft.com/azure-functions/dotnet:2.0.12275-alpine'
+        # 'nginx-1.13':
+        #   tag: 'nginx:1.13.10-alpine'
+        # wordpress:
+        #   tag: 'wordpress:5.2.3-php7.3-fpm-alpine'
+    steps:
+    - task: ComponentGovernanceComponentDetection@0
+      inputs:
+        dockerImagesToScan: $(tag)
